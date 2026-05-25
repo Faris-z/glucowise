@@ -12,7 +12,8 @@ export default function Home({ onAnalysis }) {
       const formData = new FormData();
       formData.append('file', file);
 
-      const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData });
+      const API = import.meta.env.VITE_API_URL || '';
+      const uploadRes = await fetch(`${API}/api/upload`, { method: 'POST', body: formData });
       if (!uploadRes.ok) {
         const err = await uploadRes.json();
         throw new Error(err.error || 'Upload failed');
@@ -20,7 +21,7 @@ export default function Home({ onAnalysis }) {
       const uploadData = await uploadRes.json();
 
       // Trigger AI analysis
-      const analyzeRes = await fetch('/api/analyze', {
+      const analyzeRes = await fetch(`${API}/api/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stats: uploadData.stats, patterns: uploadData.patterns }),

@@ -52,7 +52,8 @@ export function ChatBox({ context }) {
     setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
     setLoading(true);
 
-    const res = await fetch('/api/chat', {
+    const API = import.meta.env.VITE_API_URL || '';
+    const res = await fetch(`${API}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: userMsg, context }),
