@@ -1,12 +1,14 @@
 # 🩸 GlucoWise — AI-Powered Diabetes Insights Platform
 
-> Built for real patients. Powered by Claude AI. Designed to surface the truth in your glucose data.
+> Built for real patients. Powered by Groq AI. Designed to surface the truth in your glucose data.
 
 ---
 
 ## 🎯 Vision
 
 GlucoWise lets diabetes patients upload their LibreLink (or any CGM) CSV export and get deep, honest AI analysis — not just averages. It detects when your **Time-in-Range looks fine but your readings are actually dangerous**, finds hidden patterns, and explains everything in plain language.
+
+**Live demo:** https://glucowise-seven.vercel.app
 
 ---
 
@@ -15,9 +17,8 @@ GlucoWise lets diabetes patients upload their LibreLink (or any CGM) CSV export 
 ```
 glucowise/
 ├── frontend/          # React + Vite (user interface)
-├── backend/           # Node.js + Express (API + file handling)
-├── ai-agent/          # Claude-powered analysis engine
-├── docs/              # Full documentation
+├── backend/           # Node.js + Express (API + AI orchestration)
+├── docs/              # Documentation
 └── .github/workflows/ # CI/CD
 ```
 
@@ -25,25 +26,23 @@ glucowise/
 
 ## 🤖 AI Model Design
 
-### Two-Model Architecture (Token-Efficient)
+### Two-Pass Architecture (Token-Efficient)
 
-| Role | Model | Why |
-|------|-------|-----|
-| **Analyst** | `claude-sonnet-4-5` | Fast, cheap analysis of CSV data, pattern detection, insight generation |
-| **Advisor** | `claude-opus-4-5` | Deep reasoning for edge cases, dangerous patterns, nuanced medical context |
+| Pass | Model | Purpose |
+|------|-------|---------|
+| **First pass** | `llama-3.3-70b-versatile` (Groq) | Fast analysis — stats summary, pattern detection, patient-facing insights |
+| **Deep pass** | `llama-3.3-70b-versatile` (Groq) | Senior advisor role — triggered only for critical patterns, receives only the first-pass summary |
 
-### When Opus Gets Called
+### When Deep Analysis Gets Triggered
 - Detected a "deceptive TIR" pattern (good average, bad distribution)
 - Post-meal spikes exceeding 250 mg/dL repeatedly
-- Nocturnal hypoglycemia risk
-- Week-over-week deterioration trend
-- User explicitly asks "explain this in detail"
+- Nocturnal hypoglycemia risk (2 AM–5 AM lows)
+- High/low masking (highs and lows cancelling each other out)
 
 ### Token Efficiency Strategy
-1. **Sonnet does the first pass** — parses CSV, computes stats, flags anomalies
-2. **Sonnet formats a compact summary** (~300 tokens) of the flagged data
-3. **Opus receives only the summary** — not the raw CSV — saving 90%+ of tokens
-4. Responses are streamed back to the user
+1. **First pass** — computes stats, detects patterns, generates compact summary
+2. **Deep pass receives only the summary** (~300 tokens) — not the raw CSV — saving 90%+ of tokens
+3. Responses are streamed back to the user
 
 ---
 
@@ -57,38 +56,32 @@ glucowise/
 ### What Gets Analyzed
 
 #### 1. Standard Metrics
-- Time in Range (TIR): < 70, 70–180, > 180 mg/dL
+- Time in Range (TIR): < 54, 54–70, 70–180, 180–250, > 250 mg/dL
 - GMI (Glucose Management Indicator)
 - Coefficient of Variation (CV%)
 - Standard Deviation
 - Mean / Median glucose
 
 #### 2. ⚠️ The "Deceptive TIR" Pattern Detection
-This is the killer feature. A patient can have:
+This is the core feature. A patient can have:
 - TIR: 75% (looks great!)
 - But: 3 severe highs + 3 severe lows that cancel each other out
 
 GlucoWise detects:
 - **Masking patterns**: highs and lows that average to "normal"
-- **Distribution skew**: where most of the bad readings actually cluster
+- **High/low masking**: significant readings in both danger bands
 - **Time-of-day biases**: consistently high at night, low after lunch
-- **Meal response volatility**: even if post-meal return to range is fast
+- **Nocturnal hypoglycemia**: repeated lows between 2–5 AM
 
 #### 3. Pattern Detection
 - Nocturnal hypoglycemia (2 AM–5 AM lows)
-- Dawn phenomenon (rising fasting glucose)
-- Post-meal spike signatures
-- Exercise-induced patterns (time-of-day clustering)
-- Sensor gap detection (missed readings = missed events)
-
-#### 4. Trend Analysis
-- Week-over-week TIR change
-- Worsening/improving trajectory
-- Seasonal/monthly drift
+- Deceptive TIR (good average hiding dangerous distribution)
+- High/low masking
+- Sensor gap detection (missed readings)
 
 ---
 
-## 🗂️ Full File Structure
+## 🗂️ File Structure
 
 ```
 glucowise/
@@ -105,57 +98,35 @@ glucowise/
 │   │   │   └── ChatBox.jsx            # Follow-up Q&A with AI
 │   │   ├── pages/
 │   │   │   ├── Home.jsx               # Landing + upload
-│   │   │   ├── Dashboard.jsx          # Full analysis view
-│   │   │   └── Report.jsx             # Printable PDF report
-│   │   ├── hooks/
-│   │   │   ├── useAnalysis.js         # API call + streaming hook
-│   │   │   └── useCSVParser.js        # Client-side CSV preview
-│   │   ├── utils/
-│   │   │   └── glucoseFormulas.js     # GMI, CV%, TIR calculations
+│   │   │   └── Dashboard.jsx          # Full analysis view
 │   │   └── styles/
 │   │       └── theme.css              # Design tokens
 │   ├── index.html
 │   ├── vite.config.js
+│   ├── vercel.json
 │   └── package.json
 │
 ├── backend/
 │   ├── routes/
 │   │   ├── upload.js                  # POST /api/upload — CSV ingestion
 │   │   ├── analyze.js                 # POST /api/analyze — trigger AI
-│   │   ├── chat.js                    # POST /api/chat — follow-up Q&A
-│   │   └── report.js                  # GET /api/report/:id — PDF export
+│   │   └── chat.js                    # POST /api/chat — follow-up Q&A
 │   ├── services/
-│   │   ├── csvParser.js               # LibreLink + generic CSV parsing
+│   │   ├── csvParser.js               # LibreLink + Dexcom + generic CSV parsing
 │   │   ├── glucoseStats.js            # All metric calculations
 │   │   ├── patternDetector.js         # Deceptive TIR + anomaly logic
-│   │   └── aiOrchestrator.js          # Sonnet/Opus routing logic
+│   │   └── aiOrchestrator.js          # Two-pass Groq routing logic
 │   ├── middleware/
-│   │   ├── rateLimiter.js             # Protect API from abuse
-│   │   ├── fileValidator.js           # CSV format validation
 │   │   └── errorHandler.js
-│   ├── utils/
-│   │   └── promptBuilder.js           # Build compact prompts for Claude
 │   ├── app.js
 │   └── package.json
 │
-├── ai-agent/
-│   ├── sonnet-analyst.js              # First-pass analysis prompts
-│   ├── opus-advisor.js                # Deep-dive reasoning prompts
-│   ├── prompts/
-│   │   ├── system-sonnet.md           # Sonnet system prompt
-│   │   ├── system-opus.md             # Opus system prompt
-│   │   └── patterns.md                # Pattern detection definitions
-│   └── tokenBudget.js                 # Token counting + routing logic
-│
 ├── docs/
-│   ├── PLAN.md                        # This file
-│   ├── CSV_FORMATS.md                 # Supported CSV column specs
-│   ├── API.md                         # Backend API docs
-│   └── DEPLOYMENT.md                  # How to deploy
+│   └── DEPLOYMENT.md
 │
 └── .github/
     └── workflows/
-        └── deploy.yml                 # CI/CD pipeline
+        └── ci.yml
 ```
 
 ---
@@ -177,73 +148,48 @@ glucowise/
 | Node.js + Express | API server |
 | Multer | CSV file upload handling |
 | csv-parse | Server-side CSV parsing |
-| Anthropic SDK | Claude API calls |
-| Redis (optional) | Cache analysis results |
+| groq-sdk | Groq AI API calls |
+| express-rate-limit | Protect API from abuse |
 
 ### AI Layer
-| Model | Role | Avg tokens/request |
-|-------|------|-------------------|
-| claude-sonnet-4-5 | CSV analysis, metric computation summary, chat replies | ~800 |
-| claude-opus-4-5 | Deceptive pattern deep-dives, dangerous trend alerts | ~400 (receives only summary) |
+| Model | Role | Max tokens |
+|-------|------|-----------|
+| `llama-3.3-70b-versatile` | First-pass analysis + chat replies | 600 (analysis), 400 (chat) |
+| `llama-3.3-70b-versatile` | Deep-dive for critical patterns | 800 |
 
 ---
 
-## 🚀 Claude Code Implementation Instructions
+## 🚀 Running Locally
 
-### Step 1 — Initialize Repo
 ```bash
-# Run this first
-npm create vite@latest frontend -- --template react
-cd backend && npm init -y
-npm install express multer csv-parse @anthropic-ai/sdk cors dotenv
+# Backend
+cd backend
+npm install
+cp ../.env.example .env
+# Fill in GROQ_API_KEY in .env (free at console.groq.com)
+node app.js
+
+# Frontend (new terminal)
+cd frontend
+npm install
+npm run dev
 ```
-
-### Step 2 — Build Backend First (in this order)
-1. `csvParser.js` — handle LibreLink column names
-2. `glucoseStats.js` — TIR, GMI, CV%, SD
-3. `patternDetector.js` — deceptive TIR logic
-4. `promptBuilder.js` — compact ~300 token summaries
-5. `aiOrchestrator.js` — route to Sonnet vs Opus
-6. Routes: upload → analyze → chat
-
-### Step 3 — Build Frontend
-1. `UploadZone` — drag and drop CSV
-2. `StatGrid` — key numbers
-3. `TIRDonut` — visual TIR breakdown
-4. `GlucoseChart` — full timeline
-5. `PatternAlert` — dangerous pattern banner
-6. `InsightCard` — AI text output
-7. `ChatBox` — follow-up questions
-
-### Step 4 — Wire AI Agent
-1. Write system prompts (see `ai-agent/prompts/`)
-2. Implement token budget logic
-3. Test with real LibreLink CSV exports
 
 ---
 
-## 💡 Prompt Strategy (Token-Efficient)
+## 🌐 Deployment
 
-### Sonnet System Prompt (condensed)
-```
-You are a diabetes data analyst. Given glucose statistics, identify:
-1. TIR breakdown with honest assessment
-2. Dangerous patterns hidden by averages
-3. Top 3 actionable insights
-Be direct. Medical context only. No fluff.
-Output JSON: { tirAssessment, hiddenPatterns[], insights[], riskLevel, needsDeepDive }
-```
+| Service | URL |
+|---------|-----|
+| Frontend (Vercel) | https://glucowise-seven.vercel.app |
+| Backend (Render) | https://glucowise.onrender.com |
 
-### Opus Only Receives
+### Environment Variables (backend)
+```env
+GROQ_API_KEY=your-groq-key
+PORT=3001
+FRONTEND_URL=https://glucowise-seven.vercel.app
 ```
-Patient summary (Sonnet output):
-- TIR: 74% but bimodal distribution
-- Pattern: nocturnal lows + post-lunch highs masking each other
-- Flagged: deceptive_tir, high_cv (42%)
-Provide detailed medical reasoning and recommendations.
-```
-
-This saves ~3,000 tokens per deep-dive call.
 
 ---
 
@@ -251,38 +197,13 @@ This saves ~3,000 tokens per deep-dive call.
 
 LibreLink exports columns like:
 ```
-Device,Serial Number,Device Timestamp,Record Type,Historic Glucose mg/dL,Scan Glucose mg/dL,Non-numeric Rapid-Acting Insulin,Rapid-Acting Insulin (units),Non-numeric Food,Carbohydrates (grams),Carbohydrates (servings),Non-numeric Long-Acting Insulin,Long-Acting Insulin (value),Notes,Strip Glucose mg/dL,Ketone mmol/L,Meal Insulin (units),Correction Insulin (units),User Change Insulin (units)
+Device,Serial Number,Device Timestamp,Record Type,Historic Glucose mg/dL,Scan Glucose mg/dL,...
 ```
 
 Key columns:
-- `Device Timestamp` → datetime
-- `Historic Glucose mg/dL` → continuous readings (every 15 min)
-- `Scan Glucose mg/dL` → manual scans
-- `Record Type` → 0=historic, 1=scan, 6=event
-
----
-
-## 🌐 Deployment Plan
-
-### Option A: Simple (Recommended to start)
-- **Frontend**: Vercel (free tier)
-- **Backend**: Railway or Render (free tier)
-- **No database needed** — stateless, CSV processed in memory
-
-### Option B: Production
-- **Frontend**: Vercel
-- **Backend**: AWS ECS or Fly.io
-- **Storage**: S3 (optional, for saving past reports)
-- **Cache**: Redis (for repeat analyses)
-
-### Environment Variables
-```env
-ANTHROPIC_API_KEY=sk-ant-...
-PORT=3001
-MAX_FILE_SIZE_MB=10
-ENABLE_OPUS=true
-OPUS_THRESHOLD_RISK=high
-```
+- `Device Timestamp` — datetime of reading
+- `Historic Glucose mg/dL` — continuous readings (every 15 min), Record Type 0
+- `Scan Glucose mg/dL` — manual scans, Record Type 1
 
 ---
 
@@ -290,32 +211,9 @@ OPUS_THRESHOLD_RISK=high
 
 - CSV files are **never stored** — processed in memory, discarded after analysis
 - No user accounts required (v1)
-- All processing server-side (CSV never sent to Claude raw — only stats summary)
-- Rate limiting: 10 analyses/hour per IP
-- File size limit: 10MB
-- CSV-only validation (no executable uploads)
-
----
-
-## 🗺️ Development Phases
-
-### Phase 1 — MVP (2 weeks with Claude Code)
-- [ ] CSV upload + LibreLink parsing
-- [ ] Core stats (TIR, GMI, CV%)
-- [ ] Basic Sonnet analysis
-- [ ] Simple dashboard UI
-
-### Phase 2 — Intelligence (1 week)
-- [ ] Deceptive TIR pattern detection
-- [ ] Opus routing for high-risk patterns
-- [ ] Pattern alert UI
-- [ ] Follow-up chat
-
-### Phase 3 — Polish (1 week)
-- [ ] Printable PDF report
-- [ ] Multiple CSV file comparison
-- [ ] Mobile responsive
-- [ ] Deploy to production
+- Raw CSV data is **never sent to the AI** — only computed stats summary (~300 tokens)
+- Rate limiting on all API endpoints
+- CSV-only file validation
 
 ---
 
