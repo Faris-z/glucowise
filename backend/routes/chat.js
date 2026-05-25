@@ -8,6 +8,9 @@ router.post('/', async (req, res, next) => {
   try {
     const { message, context } = req.body;
     if (!message) return res.status(400).json({ error: 'Missing message' });
+    if (typeof message !== 'string' || message.length > 500) {
+      return res.status(400).json({ error: 'Message must be a string under 500 characters' });
+    }
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
