@@ -1,10 +1,10 @@
-# 🩸 GlucoWise — AI-Powered Diabetes Insights Platform
+# GlucoWise — AI-Powered Diabetes Insights Platform
 
 > Built for real patients. Powered by Groq AI. Designed to surface the truth in your glucose data.
 
 ---
 
-## 🎯 Vision
+## Vision
 
 GlucoWise lets diabetes patients upload their LibreLink (or any CGM) CSV export and get deep, honest AI analysis — not just averages. It detects when your **Time-in-Range looks fine but your readings are actually dangerous**, finds hidden patterns, and explains everything in plain language.
 
@@ -12,7 +12,7 @@ GlucoWise lets diabetes patients upload their LibreLink (or any CGM) CSV export 
 
 ---
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 ```
 glucowise/
@@ -24,7 +24,7 @@ glucowise/
 
 ---
 
-## 🤖 AI Model Design
+## AI Model Design
 
 GlucoWise uses **`llama-3.3-70b-versatile`** via Groq for all AI features.
 
@@ -43,7 +43,7 @@ Only pre-computed stats and detected patterns — raw CSV data is never sent.
 
 ---
 
-## 📊 CSV Analysis Features
+## CSV Analysis Features
 
 ### Input Support
 - LibreLink export format (primary)
@@ -59,7 +59,7 @@ Only pre-computed stats and detected patterns — raw CSV data is never sent.
 - Standard Deviation
 - Mean / Median glucose
 
-#### 2. ⚠️ The "Deceptive TIR" Pattern Detection
+#### 2. The "Deceptive TIR" Pattern Detection
 This is the core feature. A patient can have:
 - TIR: 75% (looks great!)
 - But: 3 severe highs + 3 severe lows that cancel each other out
@@ -78,7 +78,7 @@ GlucoWise detects:
 
 ---
 
-## 🗂️ File Structure
+## File Structure
 
 ```
 glucowise/
@@ -128,7 +128,7 @@ glucowise/
 
 ---
 
-## 🔧 Tech Stack
+## Tech Stack
 
 ### Frontend
 | Tool | Purpose |
@@ -156,7 +156,7 @@ glucowise/
 
 ---
 
-## 🚀 Running Locally
+## Running Locally
 
 ```bash
 # Backend
@@ -174,7 +174,7 @@ npm run dev
 
 ---
 
-## 🌐 Deployment
+## Deployment
 
 | Service | URL |
 |---------|-----|
@@ -190,7 +190,7 @@ FRONTEND_URL=https://glucowise-seven.vercel.app
 
 ---
 
-## 📱 LibreLink CSV Format Reference
+## LibreLink CSV Format Reference
 
 LibreLink exports columns like:
 ```
@@ -204,7 +204,7 @@ Key columns:
 
 ---
 
-## 🔐 Privacy & Security
+## Privacy & Security
 
 - CSV files are **never stored** — processed in memory, discarded after analysis
 - No user accounts required (v1)
@@ -214,7 +214,7 @@ Key columns:
 
 ---
 
-## 🩺 A Note From a Patient
+## A Note From a Patient
 
 This project is built by someone who uses LibreLink every day and knows that a "good" TIR number can hide dangerous patterns. The goal isn't to replace doctors — it's to give patients the vocabulary and insight to have better conversations with them.
 
