@@ -7,3 +7,13 @@ dist/
 CLAUDE.md
 docs/DEPLOYMENT.md
 .github/
+
+# Design tool artifacts
+.design-canvas.state.json
+design-canvas.jsx
+GlucoWise.html
+app.jsx
+screens/
+
+# Runtime upload temp directory
+uploads/
