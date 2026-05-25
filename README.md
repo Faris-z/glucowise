@@ -26,23 +26,20 @@ glucowise/
 
 ## 🤖 AI Model Design
 
-### Two-Pass Architecture (Token-Efficient)
+GlucoWise uses **`llama-3.3-70b-versatile`** via Groq for all AI features.
 
-| Pass | Model | Purpose |
-|------|-------|---------|
-| **First pass** | `llama-3.3-70b-versatile` (Groq) | Fast analysis — stats summary, pattern detection, patient-facing insights |
-| **Deep pass** | `llama-3.3-70b-versatile` (Groq) | Senior advisor role — triggered only for critical patterns, receives only the first-pass summary |
+| Role | System Prompt | Triggered When |
+|------|--------------|----------------|
+| **Analyst** | Patient-facing, plain language insights | Every upload |
+| **Advisor** | Senior specialist, deeper medical context | Critical patterns detected |
 
-### When Deep Analysis Gets Triggered
+### When the Advisor Role Gets Triggered
 - Detected a "deceptive TIR" pattern (good average, bad distribution)
-- Post-meal spikes exceeding 250 mg/dL repeatedly
 - Nocturnal hypoglycemia risk (2 AM–5 AM lows)
 - High/low masking (highs and lows cancelling each other out)
 
-### Token Efficiency Strategy
-1. **First pass** — computes stats, detects patterns, generates compact summary
-2. **Deep pass receives only the summary** (~300 tokens) — not the raw CSV — saving 90%+ of tokens
-3. Responses are streamed back to the user
+### What Gets Sent to the AI
+Only pre-computed stats and detected patterns — raw CSV data is never sent.
 
 ---
 
