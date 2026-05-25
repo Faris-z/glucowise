@@ -1,5 +1,9 @@
 node_modules/
 .env
+.env.production
 dist/
 *.log
 .DS_Store
+CLAUDE.md
+docs/DEPLOYMENT.md
+.github/
